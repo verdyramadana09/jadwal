@@ -857,8 +857,8 @@
 
         function addCargoRow(logo='', flight='', rute='', ktg='', bkt='', skipRender=false) {
             idCounter++;
-            const sMyIndo = logo === 'myindo' ? 'selected' : '';
-            const sEca = logo === 'ECA' ? 'selected' : '';
+            const sMyIndo = logo === 'myIndo' ? 'selected' : '';
+            const sEca = logo === 'Eca' ? 'selected' : '';
 
             document.getElementById('cargo-inputs-container').insertAdjacentHTML('beforeend', `
                 <div class="cargo-box" id="row-c-${idCounter}">
