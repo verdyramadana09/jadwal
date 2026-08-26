@@ -144,6 +144,7 @@
             display: flex; 
             flex-direction: column;
             cursor: grab;
+            touch-action: none; /* PERBAIKAN: Mencegah scroll di HP */
         }
         #content-layer:active {
             cursor: grabbing;
@@ -1175,6 +1176,7 @@
             cargoArea.style.display = (activeCargoCount === 0) ? 'none' : 'block';
         }
 
+        /* PERBAIKAN: Fungsi Unduh untuk Mendukung iPhone (Web Share API) */
         async function downloadStory() {
             document.body.classList.add('exporting');
             const container = document.getElementById('capture-wrapper');
@@ -1186,17 +1188,46 @@
                     scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
                 });
 
-                const link = document.createElement('a');
                 const dayName = document.getElementById('input-date').value.split(',')[0] || 'Story';
-                link.download = `Jadwal Penerbangan_${dayName}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+                const fileName = `Jadwal_Penerbangan_${dayName}.png`;
+
+                // Convert canvas ke Blob (File)
+                canvas.toBlob(async function(blob) {
+                    const file = new File([blob], fileName, { type: 'image/png' });
+
+                    // CEK APAKAH HP SUPPORT WEB SHARE API (Khususnya iPhone/iOS)
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: 'Jadwal Juwata',
+                            });
+                            // Jika sukses, gambar sudah disimpan/dibagikan
+                        } catch (err) {
+                            console.log('User membatalkan share', err);
+                        }
+                    } else {
+                        // FALLBACK: Untuk PC atau Android lama (Download biasa)
+                        const link = document.createElement('a');
+                        link.download = fileName;
+                        link.href = URL.createObjectURL(blob);
+                        link.click();
+                        
+                        // Bersihkan memori URL
+                        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+                    }
+                }, 'image/png');
+
             } catch (error) {
                 alert('Gagal membuat gambar. Silakan coba lagi.');
+                console.error(error);
             } finally {
-                container.style.transform = oldTransform;
-                document.body.classList.remove('exporting');
-                updatePreviewScale();
+                // Kembalikan tampilan seperti semula
+                setTimeout(() => {
+                    container.style.transform = oldTransform;
+                    document.body.classList.remove('exporting');
+                    updatePreviewScale();
+                }, 500); 
             }
         }
 
@@ -1290,6 +1321,13 @@
                 contentLayer.setPointerCapture(e.pointerId);
             });
 
+            /* PERBAIKAN: Mencegah scroll HP tertarik saat menggeser gambar/background */
+            contentLayer.addEventListener('touchmove', (e) => {
+                if (isDraggingBg || isDragging || isResizing) {
+                    e.preventDefault(); 
+                }
+            }, { passive: false });
+
             window.addEventListener('pointermove', (e) => {
                 const scale = parseFloat(window.getComputedStyle(wrapper).getPropertyValue('--preview-scale')) || 0.4;
                 
@@ -1373,7 +1411,6 @@
         }
 
         window.onload = function() {
-            // PERBAIKAN PENTING: Generate Option Gambar via JavaScript agar jalan di GitHub Pages
             const bgSelector = document.getElementById('bg-selector');
             for (let i = 1; i <= 62; i++) {
                 bgSelector.insertAdjacentHTML('beforeend', `<option value="${i}">Gambar ${i}</option>`);
