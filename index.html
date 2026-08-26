@@ -468,9 +468,9 @@
                 order: 2; /* Hasil (preview) di bawah kontrol */
                 flex: 0 0 auto; 
                 width: 100%; 
-                max-width: 600px; /* Batasan agar tidak terlalu raksasa di tablet */
+                max-width: 600px; 
                 height: auto; 
-                aspect-ratio: 1080 / 1920; /* Kunci rasio IG Story otomatis */
+                aspect-ratio: 1080 / 1920; 
                 min-height: auto; 
                 position: relative; 
                 top: auto; 
@@ -478,12 +478,10 @@
                 margin-bottom: 20px;
             }
 
-            /* Penyesuaian Flex Input di Mobile agar tidak menyempit */
             .form-group-flex select { flex: 1.5; }
             .form-group-flex input { flex: 1; min-width: 60px; }
             .btn-delete { width: 44px; height: 44px; }
             
-            /* Penyesuaian Floating Control (Slider) di Mobile */
             .floating-controls { 
                 top: -65px; 
                 padding: 10px 15px; 
@@ -496,7 +494,6 @@
             .floating-controls label { font-size: 13px; }
             .floating-controls input[type="range"] { width: 100%; }
             
-            /* Perbesar sedikit titik resize agar mudah disentuh jari (Fat Finger friendly) */
             .resize-handle { width: 36px; height: 36px; }
             .resize-handle.nw, .resize-handle.sw { left: -18px; }
             .resize-handle.ne, .resize-handle.se { right: -18px; }
@@ -525,10 +522,8 @@
         
         <div class="form-group" style="margin-bottom: 20px;">
             <label>Latar (1-62)</label>
-            <select id="bg-selector" onchange="renderPreview()">
-                <!-- Menambahkan opsi PHP sesuai request -->
-                <?php for($i = 1; $i <= 62; $i++) { echo "<option value='{$i}'>Gambar {$i}</option>"; } ?>
-            </select>
+            <!-- PERBAIKAN: Opsi PHP dihapus, digenerate oleh JS di bawah -->
+            <select id="bg-selector" onchange="renderPreview()"></select>
         </div>
 
         <div class="form-group" style="margin-bottom: 20px;">
@@ -571,7 +566,6 @@
                     <div id="draggable-content">
                         <!-- TARGET 1: JUDUL -->
                         <div id="zoomable-title" class="editor-target" data-editor-label="JUDUL & TANGGAL">
-                            <!-- Handle 4 Sudut -->
                             <div class="resize-handle nw" data-handle="nw"></div>
                             <div class="resize-handle ne" data-handle="ne"></div>
                             <div class="resize-handle sw" data-handle="sw"></div>
@@ -603,7 +597,6 @@
                                 <input type="range" id="table-content-slider" min="0.5" max="2" step="0.05" value="1" oninput="updateTableContentScale(this.value)" onpointerdown="event.stopPropagation()">
                             </div>
 
-                            <!-- Handle 4 Sudut -->
                             <div class="resize-handle nw" data-handle="nw"></div>
                             <div class="resize-handle ne" data-handle="ne"></div>
                             <div class="resize-handle sw" data-handle="sw"></div>
@@ -755,7 +748,6 @@
             const wrapper = document.getElementById('capture-wrapper');
             if (!container || !wrapper) return;
 
-            // Memperbaiki deteksi tinggi di mobile
             const availableWidth = Math.max(1, container.clientWidth);
             const availableHeight = Math.max(1, container.clientHeight);
 
@@ -1078,7 +1070,6 @@
             rows.forEach(row => container.appendChild(row));
         }
 
-        // Fungsi khusus mengubah ukuran font & logo tabel 
         function updateTableContentScale(scaleValue) {
             const tableContainer = document.getElementById('zoomable-tables');
             const baseFontSize = 22;
@@ -1209,9 +1200,6 @@
             }
         }
 
-        // =====================================================
-        // BOUNDING BOX DENGAN SNAP TO CENTER, RESIZE, & GESER BG
-        // =====================================================
         let activeTarget = null;
         let activeHandle = null;
         let isDragging = false, isResizing = false;
@@ -1293,7 +1281,6 @@
                 });
             });
 
-            // Logika Tarik/Geser Latar Belakang (Background)
             contentLayer.addEventListener('pointerdown', (e) => {
                 if (e.target.closest('.editor-target')) return;
                 
@@ -1313,7 +1300,6 @@
                     bgLayer.style.backgroundPosition = `center calc(50% + ${currentBgPosY}px)`;
                     bgLayer.dataset.bgY = currentBgPosY;
                     
-                    // Cegah scroll layar di HP hanya jika kita dengan sengaja menggeser layar
                     if (e.cancelable) {
                         e.preventDefault();
                     }
@@ -1387,6 +1373,12 @@
         }
 
         window.onload = function() {
+            // PERBAIKAN PENTING: Generate Option Gambar via JavaScript agar jalan di GitHub Pages
+            const bgSelector = document.getElementById('bg-selector');
+            for (let i = 1; i <= 62; i++) {
+                bgSelector.insertAdjacentHTML('beforeend', `<option value="${i}">Gambar ${i}</option>`);
+            }
+
             document.getElementById('input-date').value = getTodayDateIndo();
             updatePreviewScale();
             renderPreview();
