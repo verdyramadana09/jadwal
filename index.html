@@ -1039,7 +1039,10 @@
             cargoBoxes.forEach(box => {
                 const logo = box.querySelector('.inp-c-logo').value;
                 const flight = box.querySelector('.inp-c-flight').value;
-                const rute = box.querySelector('.inp-c-rute').value;
+                const rute = Array.from(box.querySelectorAll('.inp-c-city'))
+                .map(input => input.value.trim())
+                .filter(value => value !== '')
+                .join(' - ');
                 const ktg = box.querySelector('.inp-c-ktg').value;
                 const bkt = box.querySelector('.inp-c-bkt').value;
                 
