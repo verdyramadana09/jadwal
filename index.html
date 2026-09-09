@@ -336,7 +336,7 @@
         <button type="button" class="btn-process" onclick="processWhatsAppChat()">Proses Data Chat</button>
         
         <div class="form-group" style="margin-bottom: 20px;">
-            <label>Latar (1-67)</label>
+            <label>Latar (Gambar & Kustom)</label>
             <select id="bg-selector" onchange="renderPreview()"></select>
         </div>
 
@@ -357,7 +357,13 @@
 
         <div class="section-header">Cargo Flight</div>
         <div id="cargo-inputs-container"></div>
-        <button type="button" class="btn-add" onclick="addCargoRow()">+ Tambah Cargo</button>
+        
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;">
+            <button type="button" class="btn-add" style="margin:0; flex:1; font-size: 0.8rem;" onclick="addCargoRow('myindo', '3Y 4021 - 3Y 4022', 'FILIPINA-TARAKAN-TIONGKOK', '08:40 WITA', '22:30 WITA')">+ MyIndo</button>
+            <button type="button" class="btn-add" style="margin:0; flex:1; font-size: 0.8rem;" onclick="addCargoRow('ECA', 'JDE 401 - JDE 402', 'JAKARTA-PALU-TARAKAN-JAKARTA', '18:00 WITA', '20:00 WITA')">+ ECA</button>
+            <button type="button" class="btn-add" style="margin:0; flex:1; font-size: 0.8rem; background:#e2e8f0; color:#0f172a;" onclick="addCargoRow()">+ Kosong</button>
+        </div>
+        
         <button type="button" onclick="downloadStory()" class="btn-download">Unduh PNG</button>
     </div>
 
@@ -552,7 +558,7 @@
         const iconTrash = `<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
         const clockSvg = `<svg class="clock-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
 
-        let isCanvasEditMode = false; // Kunci scroll/edit
+        let isCanvasEditMode = false;
 
         function toggleEditMode() {
             isCanvasEditMode = !isCanvasEditMode;
@@ -991,6 +997,32 @@
             const arrBody = document.getElementById('tbody-arrival');
             arrBody.innerHTML = '';
             
+            let activeArrCount = 0;
+            arrRows.forEach(row => {
+                const code = row.querySelector('select').value;
+                const time = row.querySelector('input[type="text"]').value;
+                const isBatal = time.toUpperCase().includes("BATAL") || time.toUpperCase().includes("DELAY");
+                
+                if (code && dbFlight[code]) {
+                    activeArrCount++;
+                    const data = dbFlight[code];
+                    let timeHtml = isBatal ? `<span class="highlight-batal-text">${time}</span>` : `<div class="time-wrapper">${clockSvg} ${time}</div>`;
+                    
+                    arrBody.innerHTML += `<tr>
+                        <td><span class="table-cell-text">${code}</span></td>
+                        <td><img class="td-logo" src="assets/logo/${data.logo}.png"></td>
+                        <td><span class="table-cell-text">${data.tujuan}</span></td>
+                        <td>${timeHtml}</td>
+                    </tr>`;
+                }
+            });
+            arrArea.style.display = (activeArrCount === 0) ? 'none' : 'block';
+
+            const cargoBoxes = document.querySelectorAll(`.cargo-box`);
+            const cargoArea = document.getElementById('cargo-area');
+            const cargoBody = document.getElementById('tbody-cargo');
+            cargoBody.innerHTML = '';
+            
             let activeCargoCount = 0;
             cargoBoxes.forEach(box => {
                 const logo = box.querySelector('.inp-c-logo').value;
@@ -1006,43 +1038,6 @@
                 });
                 const rute = cities.join(' - '); // Gabung otomatis saat tampil di preview
                 
-                const ktg = box.querySelector('.inp-c-ktg').value;
-                const bkt = box.querySelector('.inp-c-bkt').value;
-                
-                const isBatalKtg = ktg.toUpperCase().includes("BATAL");
-                const isBatalBkt = bkt.toUpperCase().includes("BATAL");
-
-                if (flight) {
-                    activeCargoCount++;
-                    let logoUrl = logo === 'myindo' ? 'assets/logo/MyIndo.png' : 'assets/logo/Eca.png';
-                    let htmlKtg = isBatalKtg ? `<span class="highlight-batal-text">${ktg}</span>` : (ktg ? `<div class="time-wrapper">${clockSvg} ${ktg}</div>` : '-');
-                    let htmlBkt = isBatalBkt ? `<span class="highlight-batal-text">${bkt}</span>` : (bkt ? `<div class="time-wrapper">${clockSvg} ${bkt}</div>` : '-');
-
-                    cargoBody.innerHTML += `<tr>
-                        <td><span class="table-cell-text">${flight}</span></td>
-                        <td><img class="td-logo" src="${logoUrl}"></td>
-                        <td><span class="table-cell-text">${rute}</span></td>
-                        <td>${htmlKtg}</td>
-                        <td>${htmlBkt}</td>
-                    </tr>`;
-                }
-            });
-            });
-            arrArea.style.display = (activeArrCount === 0) ? 'none' : 'block';
-
-            const cargoBoxes = document.querySelectorAll(`.cargo-box`);
-            const cargoArea = document.getElementById('cargo-area');
-            const cargoBody = document.getElementById('tbody-cargo');
-            cargoBody.innerHTML = '';
-            
-            let activeCargoCount = 0;
-            cargoBoxes.forEach(box => {
-                const logo = box.querySelector('.inp-c-logo').value;
-                const flight = box.querySelector('.inp-c-flight').value;
-                const rute = Array.from(box.querySelectorAll('.inp-c-city'))
-                .map(input => input.value.trim())
-                .filter(value => value !== '')
-                .join(' - ');
                 const ktg = box.querySelector('.inp-c-ktg').value;
                 const bkt = box.querySelector('.inp-c-bkt').value;
                 
@@ -1167,7 +1162,7 @@
                 el.classList.add('editor-target');
 
                 el.addEventListener('pointerdown', (e) => {
-                    if (!isCanvasEditMode) return; // ABAIKAN JIKA SEDANG MODE SCROLL
+                    if (!isCanvasEditMode) return; 
                     
                     if (e.target.classList.contains('resize-handle') || e.target.closest('.floating-controls')) return;
                     e.stopPropagation();
@@ -1244,7 +1239,7 @@
             });
 
             contentLayer.addEventListener('pointerdown', (e) => {
-                if (!isCanvasEditMode) return; // ABAIKAN JIKA SEDANG MODE SCROLL
+                if (!isCanvasEditMode) return; 
                 if (e.target.closest('.editor-target')) return;
                 
                 isDraggingBg = true;
@@ -1254,7 +1249,7 @@
             });
 
             contentLayer.addEventListener('touchmove', (e) => {
-                if (!isCanvasEditMode) return; // Biarkan browser yang scroll jika mode aman
+                if (!isCanvasEditMode) return; 
                 
                 if (isDraggingBg || isDragging || isResizing || initialPinchDistance) {
                     e.preventDefault(); 
