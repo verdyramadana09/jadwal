@@ -691,10 +691,37 @@
             renderPreview();
         }
 
+        function generateCityInputHTML(cityValue) {
+            return `
+                <div class="form-group-flex city-row" style="margin-bottom: 0;">
+                    <input type="text" class="inp-c-city" value="${cityValue.trim()}" placeholder="Nama Kota" onkeyup="renderPreview()">
+                    <button type="button" class="btn-delete" style="width: 44px; height: 44px;" onclick="this.parentElement.remove(); renderPreview()">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            `;
+        }
+
+        function addCityToRoute(id) {
+            document.getElementById(`rute-list-${id}`).insertAdjacentHTML('beforeend', generateCityInputHTML(''));
+            renderPreview();
+        }
+
         function addCargoRow(logo='', flight='', rute='', ktg='', bkt='', skipRender=false) {
             idCounter++;
-            const sMyIndo = logo === 'MyIndo' ? 'selected' : '';
-            const sEca = logo === 'Eca' ? 'selected' : '';
+            const sMyIndo = logo === 'myindo' ? 'selected' : '';
+            const sEca = logo === 'ECA' ? 'selected' : '';
+
+            // Pecah rute default menjadi array kota, atau buat 1 input kosong jika tidak ada
+            let ruteHtml = '';
+            if (rute) {
+                const cities = rute.split('-');
+                cities.forEach(city => {
+                    ruteHtml += generateCityInputHTML(city);
+                });
+            } else {
+                ruteHtml = generateCityInputHTML('');
+            }
 
             document.getElementById('cargo-inputs-container').insertAdjacentHTML('beforeend', `
                 <div class="cargo-box" id="row-c-${idCounter}">
@@ -702,15 +729,25 @@
                         <option value="myindo" ${sMyIndo}>Logo MyIndo</option>
                         <option value="ECA" ${sEca}>Logo ECA</option>
                     </select>
+                    
                     <div class="form-group-flex">
                         <input type="text" class="inp-c-flight" value="${flight}" placeholder="Flight" onkeyup="renderPreview()">
-                        <input type="text" class="inp-c-rute" value="${rute}" placeholder="Rute" onkeyup="renderPreview()">
                     </div>
+                    
+                    <!-- Area Input Rute Dinamis (Per Kota) -->
+                    <div style="background: #f1f5f9; padding: 12px; border-radius: 12px; margin-bottom: 15px; border: 1px solid var(--border);">
+                        <label style="font-size: 0.75rem; font-weight: 800; color: var(--navy-blue); margin-bottom: 8px; display: block;">RUTE (URUTAN KOTA)</label>
+                        <div id="rute-list-${idCounter}" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
+                            ${ruteHtml}
+                        </div>
+                        <button type="button" style="background: #e0f2fe; color: var(--primary); padding: 8px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; width: 100%; border: 1px dashed var(--primary); cursor: pointer;" onclick="addCityToRoute(${idCounter})">+ Tambah Kota</button>
+                    </div>
+
                     <div class="form-group-flex">
                         <input type="text" class="inp-c-ktg" value="${ktg}" placeholder="Ktg" onkeyup="formatTimeInput(this); renderPreview()">
                         <input type="text" class="inp-c-bkt" value="${bkt}" placeholder="Bkt" onkeyup="formatTimeInput(this); renderPreview()">
                     </div>
-                    <button type="button" class="btn-delete" style="width:100%; margin-top:5px;" onclick="document.getElementById('row-c-${idCounter}').remove(); renderPreview()">${iconTrash} Hapus Cargo</button>
+                    <button type="button" class="btn-delete" style="width:100%; margin-top:5px; background: #fee2e2; color: var(--danger);" onclick="document.getElementById('row-c-${idCounter}').remove(); renderPreview()">${iconTrash} Hapus Cargo</button>
                 </div>
             `);
             if(!skipRender) renderPreview();
@@ -954,24 +991,42 @@
             const arrBody = document.getElementById('tbody-arrival');
             arrBody.innerHTML = '';
             
-            let activeArrCount = 0;
-            arrRows.forEach(row => {
-                const code = row.querySelector('select').value;
-                const time = row.querySelector('input[type="text"]').value;
-                const isBatal = time.toUpperCase().includes("BATAL") || time.toUpperCase().includes("DELAY");
+            let activeCargoCount = 0;
+            cargoBoxes.forEach(box => {
+                const logo = box.querySelector('.inp-c-logo').value;
+                const flight = box.querySelector('.inp-c-flight').value;
                 
-                if (code && dbFlight[code]) {
-                    activeArrCount++;
-                    const data = dbFlight[code];
-                    let timeHtml = isBatal ? `<span class="highlight-batal-text">${time}</span>` : `<div class="time-wrapper">${clockSvg} ${time}</div>`;
-                    
-                    arrBody.innerHTML += `<tr>
-                        <td><span class="table-cell-text">${code}</span></td>
-                        <td><img class="td-logo" src="assets/logo/${data.logo}.png"></td>
-                        <td><span class="table-cell-text">${data.tujuan}</span></td>
-                        <td>${timeHtml}</td>
+                // Ambil semua input kota dan gabungkan dengan " - "
+                const cityInputs = box.querySelectorAll('.inp-c-city');
+                let cities = [];
+                cityInputs.forEach(input => {
+                    if (input.value.trim() !== '') {
+                        cities.push(input.value.trim().toUpperCase());
+                    }
+                });
+                const rute = cities.join(' - '); // Gabung otomatis saat tampil di preview
+                
+                const ktg = box.querySelector('.inp-c-ktg').value;
+                const bkt = box.querySelector('.inp-c-bkt').value;
+                
+                const isBatalKtg = ktg.toUpperCase().includes("BATAL");
+                const isBatalBkt = bkt.toUpperCase().includes("BATAL");
+
+                if (flight) {
+                    activeCargoCount++;
+                    let logoUrl = logo === 'myindo' ? 'assets/logo/MyIndo.png' : 'assets/logo/Eca.png';
+                    let htmlKtg = isBatalKtg ? `<span class="highlight-batal-text">${ktg}</span>` : (ktg ? `<div class="time-wrapper">${clockSvg} ${ktg}</div>` : '-');
+                    let htmlBkt = isBatalBkt ? `<span class="highlight-batal-text">${bkt}</span>` : (bkt ? `<div class="time-wrapper">${clockSvg} ${bkt}</div>` : '-');
+
+                    cargoBody.innerHTML += `<tr>
+                        <td><span class="table-cell-text">${flight}</span></td>
+                        <td><img class="td-logo" src="${logoUrl}"></td>
+                        <td><span class="table-cell-text">${rute}</span></td>
+                        <td>${htmlKtg}</td>
+                        <td>${htmlBkt}</td>
                     </tr>`;
                 }
+            });
             });
             arrArea.style.display = (activeArrCount === 0) ? 'none' : 'block';
 
