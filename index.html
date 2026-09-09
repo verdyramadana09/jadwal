@@ -279,14 +279,21 @@
             background: #00aef1; color: #fff; font: 700 13px/1 Arial, sans-serif; padding: 6px 10px; border-radius: 6px 6px 0 0; pointer-events: none; z-index: 99999;
         }
 
-        .floating-controls {
-            position: absolute; top: -75px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.98);
-            padding: 12px 25px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none;
-            z-index: 100000; align-items: center; gap: 15px; pointer-events: auto; border: 2px solid #00aef1; cursor: default;
+  .floating-controls {
+            position: absolute; top: -90px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.98);
+            padding: 16px 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); display: none;
+            z-index: 100000; align-items: center; gap: 20px; pointer-events: auto; border: 3px solid #00aef1; cursor: default;
         }
         .editor-target.selected .floating-controls { display: flex; }
-        .floating-controls label { font-size: 15px; font-weight: 800; color: var(--navy-blue); white-space: nowrap; }
-        .floating-controls input[type="range"] { width: 180px; cursor: pointer; }
+        .floating-controls label { font-size: 18px; font-weight: 800; color: var(--navy-blue); white-space: nowrap; }
+        .floating-controls input[type="range"] { width: 320px; height: 16px; cursor: pointer; accent-color: var(--primary); }
+        
+        /* Tombol Bulat Penarik (Thumb) Besar */
+        .floating-controls input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; appearance: none; width: 38px; height: 38px; border-radius: 50%;
+            background: var(--navy-blue); cursor: pointer; margin-top: -11px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .floating-controls input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 16px; background: #e2e8f0; border-radius: 10px; }
 
         .resize-handle { display: none; position: absolute; width: 28px; height: 28px; background: #00aef1; border: 3px solid #fff; border-radius: 50%; z-index: 100000; box-shadow: 0 3px 8px rgba(0,0,0,0.3); }
         .editor-target.selected .resize-handle { display: block; }
@@ -308,9 +315,13 @@
             .form-group-flex select { flex: 1.5; }
             .form-group-flex input { flex: 1; min-width: 60px; }
             .btn-delete { width: 44px; height: 44px; }
-            .floating-controls { top: -65px; padding: 10px 15px; width: 90%; max-width: 300px; justify-content: center; flex-wrap: wrap; gap: 8px; }
-            .floating-controls label { font-size: 13px; }
+            
+            /* Penyesuaian slider ukuran font khusus di HP */
+            .floating-controls { top: -85px; padding: 15px 20px; width: 95%; max-width: 360px; justify-content: center; flex-wrap: wrap; gap: 8px; }
+            .floating-controls label { font-size: 16px; }
             .floating-controls input[type="range"] { width: 100%; }
+            .floating-controls input[type="range"]::-webkit-slider-thumb { width: 34px; height: 34px; margin-top: -9px;}
+            
             .resize-handle { width: 36px; height: 36px; }
             .resize-handle.e { right: -18px; }
             .resize-handle.se { right: -18px; bottom: -18px; }
