@@ -63,6 +63,13 @@
         .form-group-flex { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; width: 100%; box-sizing: border-box; }
         .form-group-flex select { flex: 2; min-width: 0; }
         .form-group-flex input { flex: 1.2; text-align: center; min-width: 0; }
+        .form-group-flex select, .form-group-flex input { font-family: 'Poppins', sans-serif; font-weight: 700; }
+        .manual-flight-fields { flex: 0 0 100%; display: none; gap: 8px; flex-wrap: wrap; padding: 8px; margin-top: -2px; background: #f8fafc; border: 1px dashed var(--border); border-radius: 10px; }
+        .manual-flight-fields.active { display: flex; }
+        .manual-flight-fields input[type="text"] { flex: 1 1 140px; text-align: left; }
+        .manual-flight-fields .manual-logo-wrap { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; }
+        .manual-flight-fields input[type="file"] { flex: 1; font-size: 12px; font-family: inherit; font-weight: 600; }
+        .manual-logo-preview { width: 38px; height: 38px; object-fit: contain; display: none; background: #fff; border-radius: 6px; border: 1px solid var(--border); }
         .form-group-flex[draggable="true"] { cursor: grab; }
         .form-group-flex[draggable="true"]:active { cursor: grabbing; }
         .form-group-flex.dragging { opacity: 0.5; background: #f1f5f9; border-radius: 12px; }
@@ -221,7 +228,7 @@
     color: var(--navy-blue);
     font-size: 85px;
     line-height: 1;
-    margin-bottom: 3px;
+    margin-bottom: 0.5px;
 }
 
 /* PENERBANGAN */
@@ -229,7 +236,7 @@
     color: var(--cyan-teal);
     font-size: 85px;
     line-height: 1;
-    margin-bottom: 3px;
+    margin-bottom: 1px;
 }
 
 /* BANDARA INTERNASIONAL
@@ -238,11 +245,11 @@
     color: var(--navy-blue);
     font-size: 48px;
     font-weight: 900;
-    line-height: 1.25;
+    line-height: 1.10;
     letter-spacing: 1px;
     text-align: center;
 
-    margin: 0 0 15px 0;
+    margin: 0 0 10px 0;
     padding: 0;
 }
 
@@ -250,7 +257,7 @@
 .title-bandara span {
     display: block;
     white-space: nowrap;
-    line-height: 1.25;
+    line-height: 1.10;
 }
         
         .date-badge-wrapper { filter: drop-shadow(0 10px 15px rgba(0, 174, 241, 0.25)); margin-bottom: 35px; display: inline-block; }
@@ -358,6 +365,7 @@
             }
             .form-group-flex select { flex: 1.5; }
             .form-group-flex input { flex: 1; min-width: 60px; }
+            .form-group-flex select, .form-group-flex input { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 16px; }
             .btn-delete { width: 44px; height: 44px; }
             
             /* Penyesuaian slider ukuran font khusus di HP */
@@ -476,7 +484,7 @@
                             
                             <div class="floating-controls no-print" id="table-scale-controls">
                                 <label>Font & Logo</label>
-                                <input type="range" id="table-content-slider" min="0.5" max="2" step="0.05" value="1" oninput="updateTableContentScale(this.value)" onpointerdown="event.stopPropagation()">
+                                <input type="range" id="table-content-slider" min="1" max="2" step="0.05" value="1" oninput="updateTableContentScale(this.value)" onpointerdown="event.stopPropagation()">
                             </div>
 
                             <div class="resize-handle e" data-handle="e"></div>
@@ -672,35 +680,90 @@
         function buildOptions(defaultCode) {
             let opts = '<option value="">- Pilih Maskapai -</option>';
             Object.keys(dbFlight).sort().forEach(c => opts += `<option value="${c}" ${c==defaultCode?'selected':''}>${c} - ${dbFlight[c].tujuan}</option>`);
+            const isManual = defaultCode && !dbFlight[defaultCode];
+            opts += `<option value="MANUAL" ${isManual?'selected':''}>✎ Input Manual...</option>`;
             return opts;
         }
 
         let idCounter = 0;
+        function manualFlightFieldsHTML(type, id, code='') {
+            const manualCode = code && !dbFlight[code] ? code : '';
+            return `
+                <div class="manual-flight-fields" id="manual-${type}-${id}">
+                    <input type="text" class="manual-flight-code" value="${manualCode}" placeholder="Kode Penerbangan" oninput="renderPreview()">
+                    <input type="text" class="manual-flight-route" value="" placeholder="Tujuan / Dari" oninput="renderPreview()">
+                    <div class="manual-logo-wrap">
+                        <img class="manual-logo-preview" id="manual-logo-preview-${type}-${id}" alt="Logo">
+                        <input type="file" class="manual-flight-logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" onchange="loadManualLogo(this, '${type}', ${id})">
+                    </div>
+                </div>`;
+        }
+
+        function toggleManualFlight(type, id) {
+            const row = document.getElementById(`row-${type}-${id}`);
+            if (!row) return;
+            const select = row.querySelector(`.inp-${type}-code`);
+            const fields = row.querySelector(`#manual-${type}-${id}`);
+            if (!select || !fields) return;
+            fields.classList.toggle('active', select.value === 'MANUAL');
+            renderPreview();
+        }
+
+        function loadManualLogo(input, type, id) {
+            const row = document.getElementById(`row-${type}-${id}`);
+            const preview = document.getElementById(`manual-logo-preview-${type}-${id}`);
+            if (!row || !preview || !input.files || !input.files[0]) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                row.dataset.manualLogo = e.target.result;
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                renderPreview();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        function getManualFlightData(row, type) {
+            const codeInput = row.querySelector('.manual-flight-code');
+            const routeInput = row.querySelector('.manual-flight-route');
+            return {
+                code: codeInput ? codeInput.value.trim().toUpperCase() : '',
+                tujuan: routeInput ? routeInput.value.trim().toUpperCase() : '',
+                logo: row.dataset.manualLogo || ''
+            };
+        }
+
         function addDepartRow(code='', time='', skipRender=false) {
             idCounter++;
+            const isManual = code && !dbFlight[code];
             document.getElementById('depart-inputs-container').insertAdjacentHTML('beforeend', `
                 <div class="form-group-flex" id="row-d-${idCounter}" draggable="true">
-                    <select class="inp-d-code" onchange="autoFill('d', ${idCounter}); renderPreview()">${buildOptions(code)}</select>
+                    <select class="inp-d-code" onchange="autoFill('d', ${idCounter}); toggleManualFlight('d', ${idCounter})">${buildOptions(code)}</select>
                     <input type="text" class="inp-d-time" id="time-d-${idCounter}" value="${time}" placeholder="Jam/Batal" onkeyup="formatTimeInput(this); checkBatal('d', ${idCounter}); renderPreview()">
                     <button type="button" class="btn-delete" onclick="deleteRowWithPair('d', ${idCounter})">${iconTrash}</button>
+                    ${manualFlightFieldsHTML('d', idCounter, code)}
                 </div>
             `);
             initDragAndDrop(document.getElementById(`row-d-${idCounter}`));
             checkBatal('d', idCounter);
+            if (isManual) toggleManualFlight('d', idCounter);
             if(!skipRender) renderPreview();
         }
 
         function addArrivalRow(code='', time='', skipRender=false) {
             idCounter++;
+            const isManual = code && !dbFlight[code];
             document.getElementById('arrival-inputs-container').insertAdjacentHTML('beforeend', `
                 <div class="form-group-flex" id="row-a-${idCounter}" draggable="true">
-                    <select class="inp-a-code" onchange="autoFill('a', ${idCounter}); renderPreview()">${buildOptions(code)}</select>
+                    <select class="inp-a-code" onchange="autoFill('a', ${idCounter}); toggleManualFlight('a', ${idCounter})">${buildOptions(code)}</select>
                     <input type="text" class="inp-a-time" id="time-a-${idCounter}" value="${time}" placeholder="Jam/Batal" onkeyup="formatTimeInput(this); checkBatal('a', ${idCounter}); renderPreview()">
                     <button type="button" class="btn-delete" onclick="deleteRowWithPair('a', ${idCounter})">${iconTrash}</button>
+                    ${manualFlightFieldsHTML('a', idCounter, code)}
                 </div>
             `);
             initDragAndDrop(document.getElementById(`row-a-${idCounter}`));
             checkBatal('a', idCounter);
+            if (isManual) toggleManualFlight('a', idCounter);
             if(!skipRender) renderPreview();
         }
 
@@ -1035,15 +1098,16 @@
                 const time = row.querySelector('input[type="text"]').value;
                 const isBatal = time.toUpperCase().includes("BATAL") || time.toUpperCase().includes("DELAY");
                 
-                if (code && dbFlight[code]) {
+                if (code && (dbFlight[code] || code === 'MANUAL')) {
+                    const data = code === 'MANUAL' ? getManualFlightData(row, 'd') : dbFlight[code];
+                    if (!data.code) return;
                     activeDepCount++;
-                    const data = dbFlight[code];
                     let timeHtml = isBatal ? `<span class="highlight-batal-text">${time}</span>` : `<div class="time-wrapper">${clockSvg} ${time}</div>`;
-                    
+                    const logoHtml = data.logo ? `<img class="td-logo" src="${data.logo}">` : (code === 'MANUAL' ? '-' : `<img class="td-logo" src="assets/logo/${data.logo}.png">`);
                     depBody.innerHTML += `<tr>
-                        <td><span class="table-cell-text">${code}</span></td>
-                        <td><img class="td-logo" src="assets/logo/${data.logo}.png"></td>
-                        <td><span class="table-cell-text">${data.tujuan}</span></td>
+                        <td><span class="table-cell-text">${data.code}</span></td>
+                        <td>${logoHtml}</td>
+                        <td><span class="table-cell-text">${data.tujuan || '-'}</span></td>
                         <td>${timeHtml}</td>
                     </tr>`;
                 }
@@ -1061,15 +1125,16 @@
                 const time = row.querySelector('input[type="text"]').value;
                 const isBatal = time.toUpperCase().includes("BATAL") || time.toUpperCase().includes("DELAY");
                 
-                if (code && dbFlight[code]) {
+                if (code && (dbFlight[code] || code === 'MANUAL')) {
+                    const data = code === 'MANUAL' ? getManualFlightData(row, 'a') : dbFlight[code];
+                    if (!data.code) return;
                     activeArrCount++;
-                    const data = dbFlight[code];
                     let timeHtml = isBatal ? `<span class="highlight-batal-text">${time}</span>` : `<div class="time-wrapper">${clockSvg} ${time}</div>`;
-                    
+                    const logoHtml = data.logo ? `<img class="td-logo" src="${data.logo}">` : (code === 'MANUAL' ? '-' : `<img class="td-logo" src="assets/logo/${data.logo}.png">`);
                     arrBody.innerHTML += `<tr>
-                        <td><span class="table-cell-text">${code}</span></td>
-                        <td><img class="td-logo" src="assets/logo/${data.logo}.png"></td>
-                        <td><span class="table-cell-text">${data.tujuan}</span></td>
+                        <td><span class="table-cell-text">${data.code}</span></td>
+                        <td>${logoHtml}</td>
+                        <td><span class="table-cell-text">${data.tujuan || '-'}</span></td>
                         <td>${timeHtml}</td>
                     </tr>`;
                 }
@@ -1127,9 +1192,16 @@
             container.style.transform = 'scale(1)';
 
             try {
+                const bgLayer = document.getElementById('layer-dynamic-bg');
+                const savedBgPosition = bgLayer.style.backgroundPosition;
+                const bgY = parseFloat(bgLayer.dataset.bgY || 0);
+                bgLayer.style.backgroundPosition = `center calc(50% + ${bgY}px)`;
+
                 const canvas = await html2canvas(document.getElementById('ig-story'), {
                     scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
                 });
+
+                bgLayer.style.backgroundPosition = savedBgPosition;
 
                 const dayName = document.getElementById('input-date').value.split(',')[0] || 'Story';
                 const fileName = `Jadwal_Penerbangan_${dayName}.png`;
