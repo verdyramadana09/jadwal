@@ -62,14 +62,8 @@
         .form-group input[type="text"]:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(0, 174, 241, 0.15); }
         .form-group-flex { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; width: 100%; box-sizing: border-box; }
         .form-group-flex select { flex: 2; min-width: 0; }
+        .form-group-flex select, .form-group input[type="text"], .form-group select { font-family: 'Poppins', sans-serif; font-weight: 700; }
         .form-group-flex input { flex: 1.2; text-align: center; min-width: 0; }
-        .form-group-flex select, .form-group-flex input { font-family: 'Poppins', sans-serif; font-weight: 700; }
-        .manual-flight-fields { flex: 0 0 100%; display: none; gap: 8px; flex-wrap: wrap; padding: 8px; margin-top: -2px; background: #f8fafc; border: 1px dashed var(--border); border-radius: 10px; }
-        .manual-flight-fields.active { display: flex; }
-        .manual-flight-fields input[type="text"] { flex: 1 1 140px; text-align: left; }
-        .manual-flight-fields .manual-logo-wrap { flex: 1 1 100%; display: flex; align-items: center; gap: 8px; }
-        .manual-flight-fields input[type="file"] { flex: 1; font-size: 12px; font-family: inherit; font-weight: 600; }
-        .manual-logo-preview { width: 38px; height: 38px; object-fit: contain; display: none; background: #fff; border-radius: 6px; border: 1px solid var(--border); }
         .form-group-flex[draggable="true"] { cursor: grab; }
         .form-group-flex[draggable="true"]:active { cursor: grabbing; }
         .form-group-flex.dragging { opacity: 0.5; background: #f1f5f9; border-radius: 12px; }
@@ -88,6 +82,12 @@
         .btn-clear { background: transparent; color: var(--danger); border: 1px solid #fca5a5; margin-bottom: 10px;}
         .cargo-box { border: 2px dashed var(--border); padding: 15px; border-radius: 16px; margin-bottom: 15px; background: #fafafa; }
         .highlight-batal { color: var(--danger) !important; font-weight: 900 !important; background: #fee2e2 !important; border-color: #fca5a5 !important;}
+        .manual-flight-fields { display:none; width:100%; box-sizing:border-box; margin:0 0 10px 0; padding:10px; background:#f8fafc; border:1px solid var(--border); border-radius:12px; }
+        .manual-flight-fields.active { display:block; }
+        .manual-flight-fields .manual-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+        .manual-flight-fields input, .manual-flight-fields select { width:100%; box-sizing:border-box; padding:9px 10px; border:1px solid var(--border); border-radius:10px; background:#fff; font-family:inherit; font-weight:600; font-size:0.85rem; }
+        .manual-flight-fields label { display:block; font-size:0.7rem; font-weight:700; color:var(--text-muted); margin-bottom:4px; }
+        .manual-flight-fields .manual-full { grid-column:1 / -1; }
 
         .preview-container {
             flex: 1 1 auto;
@@ -215,7 +215,7 @@
 .title-informasi,
 .title-penerbangan,
 .title-bandara {
-    font-family: Poppins;
+    font-family: Arial, Helvetica, sans-serif;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -227,29 +227,29 @@
 .title-informasi {
     color: var(--navy-blue);
     font-size: 85px;
-    line-height: 0.9;
-    margin-bottom: 0.5px;
+    line-height: 1;
+    margin-bottom: 3px;
 }
 
 /* PENERBANGAN */
 .title-penerbangan {
     color: var(--cyan-teal);
     font-size: 85px;
-    line-height: 0.9;
-    margin-bottom: 1px;
+    line-height: 1;
+    margin-bottom: 3px;
 }
 
 /* BANDARA INTERNASIONAL
    JUWATA TARAKAN */
 .title-bandara {
     color: var(--navy-blue);
-    font-size: 47.5px;
+    font-size: 48px;
     font-weight: 900;
-    line-height: 5;
+    line-height: 1.25;
     letter-spacing: 1px;
     text-align: center;
 
-    margin: 0 0 10px 0;
+    margin: 0 0 15px 0;
     padding: 0;
 }
 
@@ -257,7 +257,7 @@
 .title-bandara span {
     display: block;
     white-space: nowrap;
-    line-height: 1.2;
+    line-height: 1.25;
 }
         
         .date-badge-wrapper { filter: drop-shadow(0 10px 15px rgba(0, 174, 241, 0.25)); margin-bottom: 35px; display: inline-block; }
@@ -365,7 +365,6 @@
             }
             .form-group-flex select { flex: 1.5; }
             .form-group-flex input { flex: 1; min-width: 60px; }
-            .form-group-flex select, .form-group-flex input { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 16px; }
             .btn-delete { width: 44px; height: 44px; }
             
             /* Penyesuaian slider ukuran font khusus di HP */
@@ -680,90 +679,140 @@
         function buildOptions(defaultCode) {
             let opts = '<option value="">- Pilih Maskapai -</option>';
             Object.keys(dbFlight).sort().forEach(c => opts += `<option value="${c}" ${c==defaultCode?'selected':''}>${c} - ${dbFlight[c].tujuan}</option>`);
-            const isManual = defaultCode && !dbFlight[defaultCode];
-            opts += `<option value="MANUAL" ${isManual?'selected':''}>✎ Input Manual...</option>`;
+            opts += '<option value="__MANUAL__">+ Input Manual</option>';
             return opts;
         }
 
-        let idCounter = 0;
-        function manualFlightFieldsHTML(type, id, code='') {
-            const manualCode = code && !dbFlight[code] ? code : '';
-            return `
-                <div class="manual-flight-fields" id="manual-${type}-${id}">
-                    <input type="text" class="manual-flight-code" value="${manualCode}" placeholder="Kode Penerbangan" oninput="renderPreview()">
-                    <input type="text" class="manual-flight-route" value="" placeholder="Tujuan / Dari" oninput="renderPreview()">
-                    <div class="manual-logo-wrap">
-                        <img class="manual-logo-preview" id="manual-logo-preview-${type}-${id}" alt="Logo">
-                        <input type="file" class="manual-flight-logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" onchange="loadManualLogo(this, '${type}', ${id})">
-                    </div>
-                </div>`;
+        // Mengambil daftar logo yang SUDAH ADA di dbFlight, tanpa upload logo baru.
+        function buildExistingLogoOptions(defaultLogo='') {
+            const logoMap = {};
+            Object.keys(dbFlight).forEach(code => {
+                const logo = dbFlight[code].logo;
+                if (!logoMap[logo]) logoMap[logo] = code;
+            });
+
+            let opts = '<option value="">- Pilih Logo -</option>';
+            Object.keys(logoMap).sort((a,b) => a.localeCompare(b, undefined, {numeric:true})).forEach(logo => {
+                const exampleCode = logoMap[logo];
+                const prefix = exampleCode.split(' ')[0];
+                const selected = logo === defaultLogo ? 'selected' : '';
+                opts += `<option value="${logo}" ${selected}>Logo ${prefix} (${logo})</option>`;
+            });
+            return opts;
         }
 
-        function toggleManualFlight(type, id) {
+        function getFlightRowData(row) {
+            const select = row.querySelector('select');
+            const timeInput = row.querySelector('input[type="text"]');
+            const code = select ? select.value : '';
+
+            if (code === '__MANUAL__') {
+                const manualCode = row.querySelector('.manual-flight-code')?.value.trim().toUpperCase() || '';
+                const manualTujuan = row.querySelector('.manual-flight-tujuan')?.value.trim().toUpperCase() || '';
+                const manualLogo = row.querySelector('.manual-flight-logo')?.value || '';
+                return {
+                    code: manualCode,
+                    tujuan: manualTujuan,
+                    logo: manualLogo,
+                    time: timeInput ? timeInput.value : '',
+                    isManual: true
+                };
+            }
+
+            const data = dbFlight[code];
+            return {
+                code: code,
+                tujuan: data ? data.tujuan : '',
+                logo: data ? data.logo : '',
+                time: timeInput ? timeInput.value : '',
+                isManual: false
+            };
+        }
+
+        function toggleManualFlightFields(type, id) {
             const row = document.getElementById(`row-${type}-${id}`);
             if (!row) return;
-            const select = row.querySelector(`.inp-${type}-code`);
-            const fields = row.querySelector(`#manual-${type}-${id}`);
+            const select = row.querySelector('select');
+            const fields = row.querySelector('.manual-flight-fields');
             if (!select || !fields) return;
-            fields.classList.toggle('active', select.value === 'MANUAL');
-            renderPreview();
+
+            const active = select.value === '__MANUAL__';
+            fields.classList.toggle('active', active);
+
+            if (active) {
+                const logoSelect = row.querySelector('.manual-flight-logo');
+                if (logoSelect && !logoSelect.dataset.ready) {
+                    logoSelect.innerHTML = buildExistingLogoOptions();
+                    logoSelect.dataset.ready = '1';
+                }
+            }
         }
 
-        function loadManualLogo(input, type, id) {
-            const row = document.getElementById(`row-${type}-${id}`);
-            const preview = document.getElementById(`manual-logo-preview-${type}-${id}`);
-            if (!row || !preview || !input.files || !input.files[0]) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                row.dataset.manualLogo = e.target.result;
-                preview.src = e.target.result;
-                preview.style.display = 'block';
-                renderPreview();
-            };
-            reader.readAsDataURL(input.files[0]);
+        function handleFlightSelect(type, id) {
+            toggleManualFlightFields(type, id);
+            autoFill(type, id);
         }
 
-        function getManualFlightData(row, type) {
-            const codeInput = row.querySelector('.manual-flight-code');
-            const routeInput = row.querySelector('.manual-flight-route');
-            return {
-                code: codeInput ? codeInput.value.trim().toUpperCase() : '',
-                tujuan: routeInput ? routeInput.value.trim().toUpperCase() : '',
-                logo: row.dataset.manualLogo || ''
-            };
-        }
-
+        let idCounter = 0;
         function addDepartRow(code='', time='', skipRender=false) {
             idCounter++;
-            const isManual = code && !dbFlight[code];
             document.getElementById('depart-inputs-container').insertAdjacentHTML('beforeend', `
-                <div class="form-group-flex" id="row-d-${idCounter}" draggable="true">
-                    <select class="inp-d-code" onchange="autoFill('d', ${idCounter}); toggleManualFlight('d', ${idCounter})">${buildOptions(code)}</select>
+                <div class="form-group-flex" id="row-d-${idCounter}" draggable="true" style="flex-wrap:wrap;">
+                    <select class="inp-d-code" onchange="handleFlightSelect('d', ${idCounter}); renderPreview()">${buildOptions(code)}</select>
                     <input type="text" class="inp-d-time" id="time-d-${idCounter}" value="${time}" placeholder="Jam/Batal" onkeyup="formatTimeInput(this); checkBatal('d', ${idCounter}); renderPreview()">
                     <button type="button" class="btn-delete" onclick="deleteRowWithPair('d', ${idCounter})">${iconTrash}</button>
-                    ${manualFlightFieldsHTML('d', idCounter, code)}
+                    <div class="manual-flight-fields" id="manual-d-${idCounter}">
+                        <div class="manual-grid">
+                            <div>
+                                <label>KODE PENERBANGAN</label>
+                                <input type="text" class="manual-flight-code" placeholder="Contoh: AB 123" onkeyup="renderPreview()">
+                            </div>
+                            <div>
+                                <label>LOGO YANG SUDAH ADA</label>
+                                <select class="manual-flight-logo" onchange="renderPreview()">${buildExistingLogoOptions()}</select>
+                            </div>
+                            <div class="manual-full">
+                                <label>TUJUAN / ASAL</label>
+                                <input type="text" class="manual-flight-tujuan" placeholder="Contoh: JAKARTA (CGK)" onkeyup="renderPreview()">
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `);
             initDragAndDrop(document.getElementById(`row-d-${idCounter}`));
+            toggleManualFlightFields('d', idCounter);
             checkBatal('d', idCounter);
-            if (isManual) toggleManualFlight('d', idCounter);
             if(!skipRender) renderPreview();
         }
 
         function addArrivalRow(code='', time='', skipRender=false) {
             idCounter++;
-            const isManual = code && !dbFlight[code];
             document.getElementById('arrival-inputs-container').insertAdjacentHTML('beforeend', `
-                <div class="form-group-flex" id="row-a-${idCounter}" draggable="true">
-                    <select class="inp-a-code" onchange="autoFill('a', ${idCounter}); toggleManualFlight('a', ${idCounter})">${buildOptions(code)}</select>
+                <div class="form-group-flex" id="row-a-${idCounter}" draggable="true" style="flex-wrap:wrap;">
+                    <select class="inp-a-code" onchange="handleFlightSelect('a', ${idCounter}); renderPreview()">${buildOptions(code)}</select>
                     <input type="text" class="inp-a-time" id="time-a-${idCounter}" value="${time}" placeholder="Jam/Batal" onkeyup="formatTimeInput(this); checkBatal('a', ${idCounter}); renderPreview()">
                     <button type="button" class="btn-delete" onclick="deleteRowWithPair('a', ${idCounter})">${iconTrash}</button>
-                    ${manualFlightFieldsHTML('a', idCounter, code)}
+                    <div class="manual-flight-fields" id="manual-a-${idCounter}">
+                        <div class="manual-grid">
+                            <div>
+                                <label>KODE PENERBANGAN</label>
+                                <input type="text" class="manual-flight-code" placeholder="Contoh: AB 123" onkeyup="renderPreview()">
+                            </div>
+                            <div>
+                                <label>LOGO YANG SUDAH ADA</label>
+                                <select class="manual-flight-logo" onchange="renderPreview()">${buildExistingLogoOptions()}</select>
+                            </div>
+                            <div class="manual-full">
+                                <label>TUJUAN / ASAL</label>
+                                <input type="text" class="manual-flight-tujuan" placeholder="Contoh: JAKARTA (CGK)" onkeyup="renderPreview()">
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `);
             initDragAndDrop(document.getElementById(`row-a-${idCounter}`));
+            toggleManualFlightFields('a', idCounter);
             checkBatal('a', idCounter);
-            if (isManual) toggleManualFlight('a', idCounter);
             if(!skipRender) renderPreview();
         }
 
@@ -1094,20 +1143,18 @@
             
             let activeDepCount = 0;
             depRows.forEach(row => {
-                const code = row.querySelector('select').value;
-                const time = row.querySelector('input[type="text"]').value;
+                const data = getFlightRowData(row);
+                const time = data.time;
                 const isBatal = time.toUpperCase().includes("BATAL") || time.toUpperCase().includes("DELAY");
                 
-                if (code && (dbFlight[code] || code === 'MANUAL')) {
-                    const data = code === 'MANUAL' ? getManualFlightData(row, 'd') : dbFlight[code];
-                    if (!data.code) return;
+                if (data.code && data.logo && data.tujuan) {
                     activeDepCount++;
                     let timeHtml = isBatal ? `<span class="highlight-batal-text">${time}</span>` : `<div class="time-wrapper">${clockSvg} ${time}</div>`;
-                    const logoHtml = data.logo ? `<img class="td-logo" src="${data.logo}">` : (code === 'MANUAL' ? '-' : `<img class="td-logo" src="assets/logo/${data.logo}.png">`);
+                    
                     depBody.innerHTML += `<tr>
                         <td><span class="table-cell-text">${data.code}</span></td>
-                        <td>${logoHtml}</td>
-                        <td><span class="table-cell-text">${data.tujuan || '-'}</span></td>
+                        <td><img class="td-logo" src="assets/logo/${data.logo}.png"></td>
+                        <td><span class="table-cell-text">${data.tujuan}</span></td>
                         <td>${timeHtml}</td>
                     </tr>`;
                 }
@@ -1121,20 +1168,18 @@
             
             let activeArrCount = 0;
             arrRows.forEach(row => {
-                const code = row.querySelector('select').value;
-                const time = row.querySelector('input[type="text"]').value;
+                const data = getFlightRowData(row);
+                const time = data.time;
                 const isBatal = time.toUpperCase().includes("BATAL") || time.toUpperCase().includes("DELAY");
                 
-                if (code && (dbFlight[code] || code === 'MANUAL')) {
-                    const data = code === 'MANUAL' ? getManualFlightData(row, 'a') : dbFlight[code];
-                    if (!data.code) return;
+                if (data.code && data.logo && data.tujuan) {
                     activeArrCount++;
                     let timeHtml = isBatal ? `<span class="highlight-batal-text">${time}</span>` : `<div class="time-wrapper">${clockSvg} ${time}</div>`;
-                    const logoHtml = data.logo ? `<img class="td-logo" src="${data.logo}">` : (code === 'MANUAL' ? '-' : `<img class="td-logo" src="assets/logo/${data.logo}.png">`);
+                    
                     arrBody.innerHTML += `<tr>
                         <td><span class="table-cell-text">${data.code}</span></td>
-                        <td>${logoHtml}</td>
-                        <td><span class="table-cell-text">${data.tujuan || '-'}</span></td>
+                        <td><img class="td-logo" src="assets/logo/${data.logo}.png"></td>
+                        <td><span class="table-cell-text">${data.tujuan}</span></td>
                         <td>${timeHtml}</td>
                     </tr>`;
                 }
@@ -1192,16 +1237,9 @@
             container.style.transform = 'scale(1)';
 
             try {
-                const bgLayer = document.getElementById('layer-dynamic-bg');
-                const savedBgPosition = bgLayer.style.backgroundPosition;
-                const bgY = parseFloat(bgLayer.dataset.bgY || 0);
-                bgLayer.style.backgroundPosition = `center calc(50% + ${bgY}px)`;
-
                 const canvas = await html2canvas(document.getElementById('ig-story'), {
                     scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false
                 });
-
-                bgLayer.style.backgroundPosition = savedBgPosition;
 
                 const dayName = document.getElementById('input-date').value.split(',')[0] || 'Story';
                 const fileName = `Jadwal_Penerbangan_${dayName}.png`;
